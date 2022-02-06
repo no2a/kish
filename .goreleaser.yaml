@@ -1,0 +1,31 @@
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: kish
+    main: ./cmd/kish/
+    binary: kish
+    env:
+      - CGO_ENABLED=0
+    targets:
+      - linux_amd64
+      - darwin_amd64
+      - darwin_arm64
+      - windows_amd64
+  - id: kish-server
+    main: ./cmd/kish-server/
+    binary: kish-server
+    env:
+      - CGO_ENABLED=0
+    targets:
+      - linux_amd64
+      - darwin_amd64
+      - darwin_arm64
+      - windows_amd64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  skip: true

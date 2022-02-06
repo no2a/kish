@@ -1,0 +1,8 @@
+host: kish.example.com
+domain-suffix: .kish.example.com
+listen: 0.0.0.0:8087
+trust-x-forwarded-for: false
+enable-tcp-forwading: false
+account: account.yaml
+tls-cert: tls.crt
+tls-key: tls.key
