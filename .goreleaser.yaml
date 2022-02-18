@@ -23,6 +23,26 @@ builds:
       - darwin_amd64
       - darwin_arm64
       - windows_amd64
+archives:
+  - id: kish
+    builds:
+      - kish
+    files:
+      - none*
+    format_overrides:
+      - goos: windows
+        format: zip
+    wrap_in_directory: true
+  - id: kish-server
+    builds:
+      - kish-server
+    files:
+      - none*
+    format_overrides:
+      - goos: windows
+        format: zip
+    wrap_in_directory: true
+    name_template: "{{ .ProjectName }}-server_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 checksum:
   name_template: 'checksums.txt'
 snapshot:
