@@ -49,3 +49,16 @@ snapshot:
   name_template: "{{ incpatch .Version }}-next"
 changelog:
   skip: true
+
+brews:
+  - name: kish
+    tap:
+      owner: no2a
+      name: homebrew-tap
+    folder: Formula
+    url_template: "https://github.com/no2a/kish/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    commit_author:
+      name: no2a
+      email: arata776@gmail.com
+    description: "kish client"
+    ids: [kish]
