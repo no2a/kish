@@ -21,6 +21,7 @@ type ClientConfig struct {
 
 var (
 	flag_configFile string
+	flag_enableTUI  bool
 	config          ClientConfig
 	rootCmd         = &cobra.Command{
 		Use: "kish",
@@ -44,6 +45,7 @@ func init() {
 
 	f := rootCmd.PersistentFlags()
 	f.StringVar(&flag_configFile, "config", "", "config file (default is $HOME/.kish.yaml)")
+	f.BoolVar(&flag_enableTUI, "enable-tui", false, "enable UI")
 	f.StringP("hostname", "", "", "assign fixed domain name instead of random one")
 	f.BoolP("allow-my-ip", "", false, "automatically add global IP of this machine to allow-ip")
 	viper.BindPFlags(f)
@@ -83,8 +85,32 @@ func initConfig() {
 	}
 }
 
+func findAndParseFlags() (*cobra.Command, error) {
+	cmd, args, err := rootCmd.Find(os.Args[1:])
+	if err != nil {
+		return nil, err
+	}
+	err = cmd.ParseFlags(args)
+	if err != nil {
+		return nil, err
+	}
+	return cmd, nil
+}
+
 func main() {
-	err := rootCmd.Execute()
+	cmd, err := findAndParseFlags()
+	// FIXME: positional argsのチェックがtui起動後になる
+	if err == nil {
+		if flag_enableTUI {
+			tuiInit()
+			log.SetOutput(tuiLog)
+			// go tunRun()にするとctrl-Cを2回押さないと終了しなかったのでcmdのほうをgoする
+			go cmd.Execute()
+			err = tuiRun()
+		} else {
+			err = cmd.Execute()
+		}
+	}
 	if err != nil {
 		os.Exit(1)
 	}

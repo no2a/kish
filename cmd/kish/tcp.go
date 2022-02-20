@@ -27,8 +27,8 @@ func tcpParseArgs(cmd *cobra.Command, args []string) error {
 
 func tcpMain(cmd *cobra.Command, args []string) {
 	wsConn, proxyURL, header := dialKish("proxy1")
-	fmt.Printf("%s -> %s\n", proxyURL, flag_tcpTarget)
-	fmt.Printf("Allow IP: %s\n", header.Get("X-Kish-Allow-IP"))
+	tuiWriteText(fmt.Sprintf("%s -> %s\n", proxyURL, flag_tcpTarget))
+	tuiWriteText(fmt.Sprintf("Allow IP: %s\n", header.Get("X-Kish-Allow-IP")))
 	err := tcpRun(kish.MakeRWC(wsConn), flag_tcpTarget)
 	if err != nil {
 		log.Fatal(err)

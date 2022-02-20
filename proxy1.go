@@ -3,7 +3,6 @@ package kish
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -65,21 +64,24 @@ func forwardFromNetListenerToYamuxSession(listener net.Listener, session *yamux.
 		clientConn, err := listener.Accept()
 		if err != nil {
 			if !errors.Is(err, net.ErrClosed) {
-				log.Printf("Accept:err %s", err)
+				// 正常終了とみなす
+				return
 			}
+			log.Printf("error Accept: %s", err)
 			return
 		}
 		go func() {
 			defer clientConn.Close()
 			serverConn, err := session.Open()
 			if err != nil {
-				fmt.Println(err)
+				log.Printf("error session.Open: %s", err)
 				return
 			}
 			defer serverConn.Close()
 			err = Passthrough(clientConn, serverConn)
 			if err != nil {
-				fmt.Println(err)
+				log.Printf("error Passthrough: %s", err)
+				return
 			}
 		}()
 	}
