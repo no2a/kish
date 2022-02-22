@@ -59,8 +59,10 @@ cat $d/resp-header.txt
 #cat $d/resp-content.txt
 
 errors=0
+set -x
 grep -q -E '^X-Robots-Tag: none\r$' $d/resp-header.txt || errors=$(($errors+1))
 diff -u /etc/services $d/resp-content.txt || errors=$(($errors+1))
+set +x
 echo errors=$errors
 [[ $errors -eq 0 ]]
 exit $?
