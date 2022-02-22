@@ -3,6 +3,7 @@ module github.com/no2a/kish
 go 1.17
 
 require (
+	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
@@ -17,7 +18,6 @@ require (
 require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
-	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect

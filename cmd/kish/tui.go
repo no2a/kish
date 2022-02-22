@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -21,9 +22,14 @@ func tuiWriteText(text string) {
 }
 
 func tuiInit() {
+	// なんかデフォルトだと黒背景白文字になってしまうので、元の端末の色にする
+	fg := tcell.ColorDefault
+	bg := tcell.ColorDefault
 	tuiApp = tview.NewApplication()
 	tuiText = tview.NewTextView().SetChangedFunc(func() { tuiApp.Draw() })
+	tuiText.SetTextColor(fg).SetBackgroundColor(bg)
 	tuiLog = tview.NewTextView().SetChangedFunc(func() { tuiApp.Draw() })
+	tuiLog.SetTextColor(fg).SetBackgroundColor(bg)
 	flex := tview.NewFlex().SetDirection(tview.FlexRow)
 	flex.AddItem(tuiText, 3, 1, false)
 	flex.AddItem(tuiLog, 0, 1, false)
