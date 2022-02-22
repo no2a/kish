@@ -60,7 +60,7 @@ cat $d/resp-header.txt | hexdump -C
 
 errors=0
 set -x
-grep -q -E '^X-Robots-Tag: none[\r]?$' $d/resp-header.txt || errors=$(($errors+1))
+grep -q -E 'X-Robots-Tag: none' $d/resp-header.txt || errors=$(($errors+1))
 diff -u /etc/services $d/resp-content.txt || errors=$(($errors+1))
 set +x
 echo errors=$errors
