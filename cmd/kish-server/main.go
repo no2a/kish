@@ -6,52 +6,55 @@ import (
 	"os"
 
 	"github.com/no2a/kish"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/yaml.v2"
 )
 
 type ServerConfig struct {
-	Host                string `mapstructure:"host"`
-	DomainSuffix        string `mapstructure:"domain-suffix"`
-	ListenAddr          string `mapstructure:"listen"`
-	TrustXFF            bool   `mapstructure:"trust-x-forwarded-for"`
-	TokenSetPath        string `mapstructure:"account"`
-	TLSCert             string `mapstructure:"tls-cert"`
-	TLSKey              string `mapstructure:"tls-key"`
-	EnableTCPForwarding bool   `mapstructure:"enable-tcp-forwarding"`
-	WebsocketHandler    string `mapstructure:"websocket-handler"`
+	Host                string `yaml:"host"`
+	DomainSuffix        string `yaml:"domain-suffix"`
+	ListenAddr          string `yaml:"listen"`
+	TrustXFF            bool   `yaml:"trust-x-forwarded-for"`
+	TokenSetPath        string `yaml:"account"`
+	TLSCert             string `yaml:"tls-cert"`
+	TLSKey              string `yaml:"tls-key"`
+	EnableTCPForwarding bool   `yaml:"enable-tcp-forwarding"`
+	WebsocketHandler    string `yaml:"websocket-handler"`
 }
 
 var (
-	configFile string
-	config     ServerConfig
-	rootCmd    = &cobra.Command{
-		Run: serverMain,
-	}
+	config ServerConfig
 )
 
-func initConfig() {
-	viper.SetConfigFile(configFile)
-	err := viper.ReadInConfig()
+func parse() string {
+	p := kingpin.Flag("config", "config file").Required().ExistingFile()
+	kingpin.Parse()
+	return *p
+}
+
+func loadConfig(path string) error {
+	f, err := os.Open(path)
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatalf("specified config file not found: %s", err)
-		} else {
-			log.Fatalf("error reading config file: %s", err)
-		}
-	} else {
-		viper.Unmarshal(&config)
+		return err
 	}
+	dec := yaml.NewDecoder(f)
+	err = dec.Decode(&config)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func init() {
-	cobra.OnInitialize(initConfig)
-
-	f := rootCmd.PersistentFlags()
-	f.StringVar(&configFile, "config", "kish-server-config.yaml", "config file")
+func main() {
+	configFile := parse()
+	err := loadConfig(configFile)
+	if err != nil {
+		panic(err)
+	}
+	serverMain()
 }
 
-func serverMain(cmd *cobra.Command, args []string) {
+func serverMain() {
 	log.Printf("config dump: %#v", config)
 	rs := &kish.KishServer{
 		Host:                config.Host,
@@ -70,12 +73,5 @@ func serverMain(cmd *cobra.Command, args []string) {
 	}
 	if err != nil {
 		panic(err)
-	}
-}
-
-func main() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
 	}
 }

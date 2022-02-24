@@ -12,12 +12,6 @@ import (
 
 	"github.com/hashicorp/yamux"
 	"github.com/no2a/kish"
-	"github.com/spf13/cobra"
-)
-
-var (
-	flag_target     string
-	flag_hostHeader string
 )
 
 type KishClientHTTP struct {
@@ -29,30 +23,19 @@ type KishClientHTTP struct {
 	refererHeaderSH  *url.URL
 }
 
-func httpParseArgs(cmd *cobra.Command, args []string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("wrong number of argments")
-	}
-	targetArg := args[0]
-	flag_target = canonicalizeTargetArg(targetArg)
-	if flag_target == "" {
-		return fmt.Errorf("target `%s` is invalid", targetArg)
-	}
-	return nil
-}
-
-func httpMain(cmd *cobra.Command, args []string) {
+func httpMain() {
+	target := canonicalizeTargetArg(*flag_httpTarget)
 	wsConn, proxyURL, header := dialKish("proxy2")
-	tuiWriteText(fmt.Sprintf("%s -> %s\n", proxyURL, flag_target))
+	tuiWriteText(fmt.Sprintf("%s -> %s\n", proxyURL, target))
 	tuiWriteText(fmt.Sprintf("Allow IP: %s\n", header.Get("X-Kish-Allow-IP")))
 	kc := KishClientHTTP{
 		proxyURL:   proxyURL,
-		target:     flag_target,
-		hostHeader: flag_hostHeader,
+		target:     target,
+		hostHeader: *flag_hostHeader,
 		// TODO: add ways to customize items below
-		originHeader:     "http://" + flag_target,
-		locationHeaderSH: &url.URL{Scheme: "http", Host: flag_target},
-		refererHeaderSH:  &url.URL{Scheme: "http", Host: flag_target},
+		originHeader:     "http://" + target,
+		locationHeaderSH: &url.URL{Scheme: "http", Host: target},
+		refererHeaderSH:  &url.URL{Scheme: "http", Host: target},
 	}
 	err := kc.httpRun(kish.MakeRWC(wsConn))
 	if err != nil {

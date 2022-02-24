@@ -8,28 +8,14 @@ import (
 
 	"github.com/hashicorp/yamux"
 	"github.com/no2a/kish"
-	"github.com/spf13/cobra"
 )
 
-var flag_tcpTarget string
-
-func tcpParseArgs(cmd *cobra.Command, args []string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("wrong number of argments")
-	}
-	flag_tcpTarget := args[0]
-	flag_tcpTarget = canonicalizeTargetArg(flag_tcpTarget)
-	if flag_tcpTarget == "" {
-		return fmt.Errorf("target `%s` is invalid", flag_tcpTarget)
-	}
-	return nil
-}
-
-func tcpMain(cmd *cobra.Command, args []string) {
+func tcpMain() {
+	target := canonicalizeTargetArg(*flag_tcpTarget)
 	wsConn, proxyURL, header := dialKish("proxy1")
-	tuiWriteText(fmt.Sprintf("%s -> %s\n", proxyURL, flag_tcpTarget))
+	tuiWriteText(fmt.Sprintf("%s -> %s\n", proxyURL, target))
 	tuiWriteText(fmt.Sprintf("Allow IP: %s\n", header.Get("X-Kish-Allow-IP")))
-	err := tcpRun(kish.MakeRWC(wsConn), flag_tcpTarget)
+	err := tcpRun(kish.MakeRWC(wsConn), target)
 	if err != nil {
 		log.Fatal(err)
 	}
