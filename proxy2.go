@@ -272,6 +272,7 @@ func (p *proxy2Struct) normalHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	defer serverConn.Close()
 	req.Header.Set("X-Forwarded-For", remoteIP)
+	req.Header.Set("X-Forwarded-Proto", "https")
 
 	if p.websocketHandler == "websocket" {
 		// websocket.Connを両サイドに作ってそれらをつなぐ方式
