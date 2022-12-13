@@ -9,7 +9,7 @@ killkill() {
 }
 
 d=$(mktemp -d)
-trap 'killkill; rm -r "$d"' EXIT
+trap 'killkill || true; rm -r "$d"' EXIT
 
 mkdir $d/server
 mkdir $d/client
@@ -67,5 +67,8 @@ grep $'^X-Robots-Tag: none\r$' $d/resp-header.txt || errors=$(($errors+1))
 #diff -u /etc/services $d/resp-content.txt || errors=$(($errors+1))
 set +x
 echo errors=$errors
-[[ $errors -eq 0 ]]
-exit $?
+if [[ $errors -eq 0 ]]; then
+    exit 0
+else
+    exit 1
+fi
