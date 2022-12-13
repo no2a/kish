@@ -35,7 +35,9 @@ func httpMain() {
 		// TODO: add ways to customize items below
 		originHeader:     "http://" + target,
 		locationHeaderSH: &url.URL{Scheme: "http", Host: target},
-		refererHeaderSH:  &url.URL{Scheme: "http", Host: target},
+	}
+	if *flag_modifyReferer {
+		kc.refererHeaderSH = &url.URL{Scheme: "http", Host: target}
 	}
 	err := kc.httpRun(kish.MakeRWC(wsConn))
 	if err != nil {

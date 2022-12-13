@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -eu
+set -o pipefail
+set -o posix
+
 killkill() {
     pkill -P $$
 }
@@ -50,9 +54,7 @@ sleep 1
 
 curl http://localhost:8087/services.txt \
     --dump-header "$d/resp-header.txt" \
-    --output "$d/resp-content.txt" \
-    --header 'Referer: http://localhost:8087/'
-
+    --output "$d/resp-content.txt"
 
 killkill
 

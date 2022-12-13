@@ -29,6 +29,7 @@ var (
 
 	flag_httpTarget *string
 	flag_hostHeader *string
+	flag_modifyReferer *bool
 
 	flag_tcpTarget *string
 
@@ -58,6 +59,7 @@ func parseArgs() (string, func()) {
 
 	http := app.Command("http", "")
 	flag_hostHeader = http.Flag("host-header", "value of Host header of forawarded requests").String()
+	flag_modifyReferer = http.Flag("modify-referer", "replace scheme and host part of incoming referer header").Bool()
 	flag_httpTarget = http.Arg("target", "").Required().String()
 
 	tcp := app.Command("tcp", "")
