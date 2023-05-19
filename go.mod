@@ -1,6 +1,6 @@
 module github.com/no2a/kish
 
-go 1.17
+go 1.20
 
 require (
 	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1
