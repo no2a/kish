@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type TokenSet struct {
@@ -25,7 +25,7 @@ func loadStringStringMapYAML(f *os.File) (*map[string]string, time.Time, error) 
 		return nil, time.Time{}, err
 	}
 	var m map[string]string
-	err = yaml.UnmarshalStrict(b, &m)
+	err = yaml.Unmarshal(b, &m)
 	if err != nil {
 		return nil, time.Time{}, err
 	}

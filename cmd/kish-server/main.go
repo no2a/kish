@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/no2a/kish"
-	"gopkg.in/alecthomas/kingpin.v2"
-	"gopkg.in/yaml.v2"
+	"github.com/alecthomas/kingpin/v2"
+	"gopkg.in/yaml.v3"
 )
 
 type ServerConfig struct {
