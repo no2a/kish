@@ -3,14 +3,12 @@ package kish
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 
-	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,15 +18,6 @@ var (
 
 type HasKeyID interface {
 	GetKeyID() string
-}
-
-func (rs *KishServer) jwtUserKeyfunc(token *jwt.Token) (interface{}, error) {
-	keyID := token.Claims.(HasKeyID).GetKeyID()
-	key := rs.TokenSet.Get(keyID)
-	if key == nil {
-		return nil, errors.New("key not found")
-	}
-	return key, nil
 }
 
 func extractBearerToken(s string) string {

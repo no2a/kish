@@ -11,68 +11,11 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
-	jwt "github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/yamux"
 )
-
-type ProxyParameters struct {
-	Host      string            `json:"host"`
-	AllowIP   []string          `json:"allowIP"`
-	BasicAuth map[string]string `json:"basicAuth"`
-	AllowMyIP bool              `json:"allowMyIP"`
-}
-
-type ProxyClaims struct {
-	KeyID string `json:"keyID"`
-	ProxyParameters
-	jwt.RegisteredClaims
-}
-
-func (c *ProxyClaims) GetKeyID() string {
-	return c.KeyID
-}
-
-func MakeProxyJWT(params *ProxyParameters, key []byte, keyID string) (string, error) {
-	now := time.Now()
-	claims := ProxyClaims{
-		keyID,
-		*params,
-		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(300 * time.Second)),
-			NotBefore: jwt.NewNumericDate(now.Add(-300 * time.Second)),
-			ID:        uuid.New().String(),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(key)
-}
-
-func parseProxyClaims(t string, keyfunc jwt.Keyfunc) *ProxyClaims {
-	token, err := jwt.ParseWithClaims(t, &ProxyClaims{}, keyfunc)
-	if err != nil {
-		log.Printf("jwt.ParseWithClaims:%s", err)
-		return nil
-	}
-	claims := token.Claims.(*ProxyClaims)
-	if claims.ExpiresAt == nil || claims.NotBefore == nil || claims.ID == "" {
-		return nil
-	}
-	if claims.ExpiresAt.Time.Unix()-claims.NotBefore.Time.Unix() > 600 {
-		// too long
-		return nil
-	}
-	err = claims.Valid()
-	if err != nil {
-		return nil
-	}
-	// TODO: prevent replay attack by checking duplication of ID
-	return claims
-}
 
 type proxy2Struct struct {
 	host      string
@@ -116,8 +59,9 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	t := extractBearerToken(r.Header.Get("Authorization"))
-	claims := parseProxyClaims(t, rs.jwtUserKeyfunc)
-	if claims == nil {
+	claims, err := validateToken(t, rs.TokenSet)
+	if claims == nil || err != nil {
+		log.Printf("validateToken failed: %s", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 		cancel()

@@ -9,6 +9,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/no2a/kish"
@@ -58,21 +59,21 @@ func dialKish(pathAppend string) (*websocket.Conn, string, http.Header) {
 		AllowMyIP: config.Restriction.AllowMyIP,
 		BasicAuth: config.Restriction.Auth,
 	}
-	proxyJWT, err := kish.MakeProxyJWT(&params, []byte(keySecret), keyID)
+	token, err := kish.GenerateToken(time.Now(), &params, []byte(keySecret), keyID)
 	if err != nil {
 		log.Fatal(err)
 	}
 	origin := mapWsToHttp(wsURL.Scheme) + "://" + wsURL.Host
-	wsConn, proxyURL, header, err := makeWsConn(wsURL.String(), origin, proxyJWT)
+	wsConn, proxyURL, header, err := makeWsConn(wsURL.String(), origin, token)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return wsConn, proxyURL, header
 }
 
-func makeWsConn(wsUrl string, origin string, jwt string) (*websocket.Conn, string, http.Header, error) {
+func makeWsConn(wsUrl string, origin string, token string) (*websocket.Conn, string, http.Header, error) {
 	header := http.Header{}
-	header.Set("Authorization", "Bearer "+jwt)
+	header.Set("Authorization", "Bearer "+token)
 	header.Set("Origin", origin)
 	conn, resp, err := websocket.DefaultDialer.Dial(wsUrl, header)
 	if err != nil {
