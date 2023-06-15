@@ -39,6 +39,9 @@ func (ts *TokenSet) ensureLoaded() {
 			log.Printf("TokenSet loadStringStringMapYAML: %s", err)
 		}
 	}()
+	if ts.Path == "" {
+		return
+	}
 	f, err := os.Open(ts.Path)
 	if err != nil {
 		return
