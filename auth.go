@@ -4,8 +4,15 @@ import (
 	"errors"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+)
+
+var (
+	ErrNotContainRequiredClaims = errors.New("not contain required claims")
+	ErrLifetimeTooLong          = errors.New("lifetime is too long")
+	ErrKeyNotFound              = errors.New("key not found")
+	ErrInvalidToken             = errors.New("invalid token")
 )
 
 type ProxyParameters struct {
@@ -25,30 +32,32 @@ func (c *proxyClaims) GetKeyID() string {
 	return c.KeyID
 }
 
+func (c *proxyClaims) Validate() error {
+	if c.ExpiresAt == nil || c.NotBefore == nil || c.ID == "" {
+		return ErrNotContainRequiredClaims
+	}
+	if c.ExpiresAt.Time.Unix()-c.NotBefore.Time.Unix() > 600 {
+		return ErrLifetimeTooLong
+	}
+	return nil
+}
+
 func validateToken(t string, ts *TokenSet) (*ProxyParameters, error) {
 	keyfunc := func(token *jwt.Token) (interface{}, error) {
 		keyID := token.Claims.(HasKeyID).GetKeyID()
 		key := ts.Get(keyID)
 		if key == nil {
-			return nil, errors.New("key not found")
+			return nil, ErrKeyNotFound
 		}
 		return key, nil
 	}
-	token, err := jwt.ParseWithClaims(t, &proxyClaims{}, keyfunc)
+	claims := proxyClaims{}
+	token, err := jwt.ParseWithClaims(t, &claims, keyfunc)
 	if err != nil {
 		return nil, err
 	}
-	claims := token.Claims.(*proxyClaims)
-	if claims.ExpiresAt == nil || claims.NotBefore == nil || claims.ID == "" {
-		return nil, errors.New("invalid token")
-	}
-	if claims.ExpiresAt.Time.Unix()-claims.NotBefore.Time.Unix() > 600 {
-		// too long
-		return nil, errors.New("invalid token")
-	}
-	err = claims.Valid()
-	if err != nil {
-		return nil, errors.New("invalid token")
+	if !token.Valid {
+		return nil, ErrInvalidToken
 	}
 	return &claims.ProxyParameters, nil
 }

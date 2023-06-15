@@ -61,7 +61,7 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 	t := extractBearerToken(r.Header.Get("Authorization"))
 	claims, err := validateToken(t, rs.TokenSet)
 	if claims == nil || err != nil {
-		log.Printf("validateToken failed: %s", err)
+		log.Printf("validateToken failed: %+v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 		cancel()
