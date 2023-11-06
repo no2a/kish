@@ -7,7 +7,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.6.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/yamux v0.1.1
 	github.com/rivo/tview v0.0.0-20230511053024-822bd067b165
