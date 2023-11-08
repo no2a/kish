@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/gdamore/tcell/v2 v2.6.0
-	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/golang-jwt/jwt/v5 v5.1.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
