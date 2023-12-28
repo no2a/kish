@@ -69,13 +69,10 @@ func (rs *KishServer) DeleteHostRouter(host string) {
 
 func (rs *KishServer) rebuild() {
 	r := mux.NewRouter()
-	log.Printf("createing new router %p", r)
 	for host, bf := range rs.buildFuncs {
-		log.Printf("adding route to host %s to %p", host, r)
 		sr := r.Host(host).Subrouter()
 		bf(sr)
 	}
-	log.Printf("swap router from %p to %p", rs.root, r)
 	rs.mu.Lock()
 	rs.root = r
 	rs.mu.Unlock()
@@ -85,6 +82,5 @@ func (rs *KishServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rs.mu.Lock()
 	root := rs.root
 	rs.mu.Unlock()
-	log.Printf("ServeHTTP on router %p", root)
 	root.ServeHTTP(w, r)
 }
