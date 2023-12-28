@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -52,27 +54,42 @@ func dialKish(pathAppend string) (*websocket.Conn, string, http.Header) {
 	if keyID == "" || keySecret == "" {
 		log.Fatalf("key is invalid")
 	}
-
+	token, err := kish.GenerateToken(time.Now(), []byte(keySecret), keyID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	origin := mapWsToHttp(wsURL.Scheme) + "://" + wsURL.Host
 	params := kish.ProxyParameters{
 		Host:      config.Host,
 		AllowIP:   config.Restriction.AllowIP,
 		AllowMyIP: config.Restriction.AllowMyIP,
 		BasicAuth: config.Restriction.Auth,
 	}
-	token, err := kish.GenerateToken(time.Now(), &params, []byte(keySecret), keyID)
+	paramStr, err := base64str(&params)
 	if err != nil {
 		log.Fatal(err)
 	}
-	origin := mapWsToHttp(wsURL.Scheme) + "://" + wsURL.Host
-	wsConn, proxyURL, header, err := makeWsConn(wsURL.String(), origin, token)
+	wsConn, proxyURL, header, err := makeWsConn(wsURL.String(), origin, token, paramStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return wsConn, proxyURL, header
 }
 
-func makeWsConn(wsUrl string, origin string, token string) (*websocket.Conn, string, http.Header, error) {
+func base64str(pp *kish.ProxyParameters) (string, error) {
+	m, err := json.Marshal(pp)
+	if err != nil {
+		return "", err
+	}
+	l := base64.StdEncoding.EncodedLen(len(m))
+	b := make([]byte, l)
+	base64.StdEncoding.Encode(b, m)
+	return string(b), nil
+}
+
+func makeWsConn(wsUrl string, origin string, token string, param string) (*websocket.Conn, string, http.Header, error) {
 	header := http.Header{}
+	header.Set("X-Kish-HTTP", param)
 	header.Set("Authorization", "Bearer "+token)
 	header.Set("Origin", origin)
 	conn, resp, err := websocket.DefaultDialer.Dial(wsUrl, header)

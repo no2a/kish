@@ -15,16 +15,8 @@ var (
 	ErrInvalidToken             = errors.New("invalid token")
 )
 
-type ProxyParameters struct {
-	Host      string            `json:"host"`
-	AllowIP   []string          `json:"allowIP"`
-	BasicAuth map[string]string `json:"basicAuth"`
-	AllowMyIP bool              `json:"allowMyIP"`
-}
-
 type proxyClaims struct {
 	KeyID string `json:"keyID"`
-	ProxyParameters
 	jwt.RegisteredClaims
 }
 
@@ -42,7 +34,7 @@ func (c *proxyClaims) Validate() error {
 	return nil
 }
 
-func validateToken(t string, ts *TokenSet) (*ProxyParameters, error) {
+func validateToken(t string, ts *TokenSet) error {
 	keyfunc := func(token *jwt.Token) (interface{}, error) {
 		keyID := token.Claims.(HasKeyID).GetKeyID()
 		key := ts.Get(keyID)
@@ -54,18 +46,17 @@ func validateToken(t string, ts *TokenSet) (*ProxyParameters, error) {
 	claims := proxyClaims{}
 	token, err := jwt.ParseWithClaims(t, &claims, keyfunc)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !token.Valid {
-		return nil, ErrInvalidToken
+		return ErrInvalidToken
 	}
-	return &claims.ProxyParameters, nil
+	return nil
 }
 
-func GenerateToken(now time.Time, params *ProxyParameters, key []byte, keyID string) (string, error) {
+func GenerateToken(now time.Time, key []byte, keyID string) (string, error) {
 	claims := proxyClaims{
 		keyID,
-		*params,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(300 * time.Second)),
 			NotBefore: jwt.NewNumericDate(now.Add(-300 * time.Second)),

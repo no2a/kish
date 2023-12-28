@@ -57,11 +57,11 @@ func TestValidateToken(t *testing.T) {
 			keyID: keyValue,
 		},
 	}
-	tokenStr, err1 := GenerateToken(time.Now(), &ProxyParameters{}, []byte(keyValue), keyID)
+	tokenStr, err1 := GenerateToken(time.Now(), []byte(keyValue), keyID)
 	if err1 != nil {
 		t.Errorf("err1: %+v", err1)
 	}
-	_, err2 := validateToken(tokenStr, &ts)
+	err2 := validateToken(tokenStr, &ts)
 	if err2 != nil {
 		t.Errorf("err2: %+v", err2)
 	}
@@ -76,11 +76,11 @@ func TestValidateTokenKeyIDBad(t *testing.T) {
 			keyID: keyValue,
 		},
 	}
-	tokenStr, err1 := GenerateToken(time.Now(), &ProxyParameters{}, []byte(keyValue), keyIDBad)
+	tokenStr, err1 := GenerateToken(time.Now(), []byte(keyValue), keyIDBad)
 	if err1 != nil {
 		t.Errorf("err1: %+v", err1)
 	}
-	_, err2 := validateToken(tokenStr, &ts)
+	err2 := validateToken(tokenStr, &ts)
 	if !errors.Is(err2, jwt.ErrTokenUnverifiable) {
 		t.Errorf("err2 is unexpected: %+v", err2)
 	}
@@ -95,11 +95,11 @@ func TestValidateTokenKeyValueBad(t *testing.T) {
 			keyID: keyValue,
 		},
 	}
-	tokenStr, err1 := GenerateToken(time.Now(), &ProxyParameters{}, []byte(keyValueBad), keyID)
+	tokenStr, err1 := GenerateToken(time.Now(), []byte(keyValueBad), keyID)
 	if err1 != nil {
 		t.Errorf("err1: %+v", err1)
 	}
-	_, err2 := validateToken(tokenStr, &ts)
+	err2 := validateToken(tokenStr, &ts)
 	if !errors.Is(err2, jwt.ErrSignatureInvalid) {
 		t.Errorf("err2 is unexpected: %+v", err2)
 	}

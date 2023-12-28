@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
 	"io"
 	"log"
 	"net"
@@ -16,6 +18,13 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/yamux"
 )
+
+type ProxyParameters struct {
+	Host      string            `json:"host"`
+	AllowIP   []string          `json:"allowIP"`
+	BasicAuth map[string]string `json:"basicAuth"`
+	AllowMyIP bool              `json:"allowMyIP"`
+}
 
 type proxy2Struct struct {
 	host      string
@@ -59,12 +68,23 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	t := extractBearerToken(r.Header.Get("Authorization"))
-	claims, err := validateToken(t, rs.TokenSet)
-	if claims == nil || err != nil {
+	if err := validateToken(t, rs.TokenSet); err != nil {
 		log.Printf("validateToken failed: %+v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 		cancel()
+		return
+	}
+
+	bt, err := base64.StdEncoding.DecodeString(r.Header.Get("X-Kish-HTTP"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	var params ProxyParameters
+	err = json.Unmarshal(bt, &params)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -74,13 +94,13 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	proxy2.basicAuth = map[string]string{}
-	for user, pass := range claims.BasicAuth {
+	for user, pass := range params.BasicAuth {
 		proxy2.basicAuth[user] = pass
 	}
 
 	remoteIP := GetRemoteIP(r, rs.TrustXFF)
 
-	if claims.Host == "" {
+	if params.Host == "" {
 		ngorkishDN, err := makeNgrokishDomainName(remoteIP, rs.ProxyDomainSuffix)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -88,22 +108,19 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 		}
 		proxy2.host = ngorkishDN
 	} else {
-		if strings.Index(claims.Host, ".") == -1 {
-			claims.Host += rs.ProxyDomainSuffix
-		}
-		if !strings.HasSuffix(claims.Host, rs.ProxyDomainSuffix) {
+		if !strings.HasSuffix(params.Host, rs.ProxyDomainSuffix) {
 			w.Header().Set("X-Error-Message", "wrong domain name")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		// 使えない文字が入ってないかチェック
-		dc := strings.TrimSuffix(claims.Host, rs.ProxyDomainSuffix)
+		dc := strings.TrimSuffix(params.Host, rs.ProxyDomainSuffix)
 		if matched, _ := regexp.MatchString("^[a-z0-9][-a-z0-9]*$", strings.ToLower(dc)); !matched {
 			w.Header().Set("X-Error-Message", "wrong domain name")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		proxy2.host = claims.Host
+		proxy2.host = params.Host
 	}
 	// hostが既に使われていないかチェック
 	// ランダム生成の場合はやり直せるがめんどうなのでそのままエラーにしている
@@ -114,10 +131,10 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, cidr := range claims.AllowIP {
+	for _, cidr := range params.AllowIP {
 		proxy2.ipset.Add(cidr)
 	}
-	if claims.AllowMyIP {
+	if params.AllowMyIP {
 		if strings.Index(remoteIP, ":") != -1 {
 			// 多分IPv6
 			proxy2.ipset.Add(remoteIP + "/128")
