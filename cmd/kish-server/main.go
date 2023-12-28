@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/no2a/kish"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/no2a/kish"
 	"gopkg.in/yaml.v3"
 )
 
@@ -62,7 +62,6 @@ func serverMain() {
 		TokenSet:            &kish.TokenSet{Path: config.TokenSetPath},
 		TrustXFF:            config.TrustXFF,
 		EnableTCPForwarding: config.EnableTCPForwarding,
-		WebsocketHandler:    config.WebsocketHandler,
 	}
 	rs.Init()
 	var err error

@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/hashicorp/yamux"
 )
 
@@ -33,9 +32,6 @@ type proxy2Struct struct {
 	basicAuth map[string]string
 
 	session *yamux.Session
-
-	// websocket or direct : どの方式がいいか未決なので設定で選べるようにする。デフォルト("")では中継せずBadRequestを返す
-	websocketHandler string
 }
 
 func makeRandomStr(length int) (string, error) {
@@ -89,8 +85,7 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	proxy2 := proxy2Struct{
-		trustXFF:         rs.TrustXFF,
-		websocketHandler: rs.WebsocketHandler,
+		trustXFF: rs.TrustXFF,
 	}
 
 	proxy2.basicAuth = map[string]string{}
@@ -220,8 +215,7 @@ func (p *proxy2Struct) normalHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Access form your IP is not allowed", http.StatusForbidden)
 		return
 	}
-	okAuth := p.checkAuth(req)
-	if !okAuth {
+	if !p.checkAuth(req) {
 		w.Header().Set("WWW-Authenticate", "Basic")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -235,28 +229,7 @@ func (p *proxy2Struct) normalHandler(w http.ResponseWriter, req *http.Request) {
 	req.Header.Set("X-Forwarded-For", remoteIP)
 	req.Header.Set("X-Forwarded-Proto", "https")
 
-	if p.websocketHandler == "websocket" {
-		// websocket.Connを両サイドに作ってそれらをつなぐ方式
-		if IsWebsocket(req) {
-			dc := func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return p.session.Open()
-			}
-			wsd := &websocket.Dialer{NetDialContext: dc}
-			wsresp, err := PassthroughWebsocket(wsd, w, req)
-			// ここに来た時点でコネクションはhijackされてClose済み。後始末は不要。
-			if err != nil {
-				log.Printf("error PasthroughWebsocket: %s", err)
-				log.Printf("  resp headers: %#v", wsresp.Header)
-				// wsrespはwへの送出に失敗ずみなので捨てるしかない
-			} else {
-				// wsrespはすでにwに送出されているのでなにもする必要はない
-			}
-			return
-		}
-	}
-
-	err = req.Write(serverConn)
-	if err != nil {
+	if err = req.Write(serverConn); err != nil {
 		log.Printf("error req.Write: %s", err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
@@ -269,26 +242,14 @@ func (p *proxy2Struct) normalHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if p.websocketHandler == "" {
-		// websocketを中継しない
-		if IsWebsocket(req) && resp.StatusCode == 101 {
-			http.Error(w, "forwarding websocket is disabled", http.StatusBadRequest)
-			return
-		}
-	}
-
-	_, err = writeResponse(resp, w)
-	if err != nil {
+	if _, err = writeResponse(resp, w); err != nil {
 		log.Printf("responseToResponseWriter: %s", err)
 		return
 	}
 	log.Printf("resp Connection:%s", resp.Header.Get("Connection"))
 
-	if p.websocketHandler == "direct" {
-		// websocketを作らずhijackしたnet.Connとyamuxストリームを直接つなぐ方式
-		if IsWebsocket(req) && resp.StatusCode == 101 {
-			hijackToWebsocket(w, req, serverConn)
-		}
+	if IsWebsocket(req) && resp.StatusCode == 101 {
+		hijackToWebsocket(w, req, serverConn)
 	}
 	return
 }
@@ -342,34 +303,4 @@ func GetWsURL(req *http.Request) *url.URL {
 		wsURL.Host = req.Host
 	}
 	return &wsURL
-}
-
-func PassthroughWebsocket(dialer *websocket.Dialer, w http.ResponseWriter, req *http.Request) (*http.Response, error) {
-	wsURL := GetWsURL(req)
-	wsHeader := http.Header{}
-	for k, v := range req.Header {
-		wsHeader[k] = v
-	}
-	// Avoid error of duplicate header not allowed
-	wsHeader.Del("Connection")
-	wsHeader.Del("Upgrade")
-	wsHeader.Del("Sec-WebSocket-Extensions")
-	wsHeader.Del("Sec-Websocket-Key")
-	wsHeader.Del("Sec-WebSocket-Protocol")
-	wsHeader.Del("Sec-Websocket-Version")
-
-	wsDest, res, err := dialer.Dial(wsURL.String(), wsHeader)
-	if err != nil {
-		_, err2 := writeResponse(res, w)
-		log.Printf("responseToResponseWriter: %s", err2)
-		// 返すのは元のerr。err2のハンドリングはログに出すだけ
-		return res, err
-	}
-	wsSrc, err := websocketUpgrader.Upgrade(w, req, nil)
-	go func() {
-		defer wsDest.Close()
-		defer wsSrc.Close()
-		Passthrough(MakeRWC(wsSrc), MakeRWC(wsDest))
-	}()
-	return res, nil
 }

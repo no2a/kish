@@ -23,7 +23,6 @@ type KishServer struct {
 	TokenSet            *TokenSet
 	TrustXFF            bool
 	EnableTCPForwarding bool
-	WebsocketHandler    string
 }
 
 func (rs *KishServer) Init() {
