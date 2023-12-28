@@ -49,7 +49,7 @@ $d/kish --config=$d/client/config.yaml --no-enable-tui --hostname=localhost http
 
 sleep 1
 
-output=$(python e2e-websockets/hello.py ws://localhost:18765)
+output=$(python e2e-websockets/hello.py ws://localhost:18087)
 
 killkill
 
