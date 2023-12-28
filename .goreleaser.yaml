@@ -20,6 +20,7 @@ builds:
       - CGO_ENABLED=0
     targets:
       - linux_amd64
+      - linux_arm64
 archives:
   - id: kish
     builds:
@@ -49,7 +50,7 @@ changelog:
 
 brews:
   - name: kish
-    tap:
+    repository:
       owner: no2a
       name: homebrew-tap
     folder: Formula
