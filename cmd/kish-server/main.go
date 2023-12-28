@@ -19,7 +19,6 @@ type ServerConfig struct {
 	TLSCert             string `yaml:"tls-cert"`
 	TLSKey              string `yaml:"tls-key"`
 	EnableTCPForwarding bool   `yaml:"enable-tcp-forwarding"`
-	WebsocketHandler    string `yaml:"websocket-handler"`
 }
 
 var (
