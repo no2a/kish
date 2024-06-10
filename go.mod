@@ -8,7 +8,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
-	github.com/gorilla/websocket v1.5.1
+	github.com/gorilla/websocket v1.5.2
 	github.com/hashicorp/yamux v0.1.1
 	github.com/rivo/tview v0.0.0-20230511053024-822bd067b165
 	gopkg.in/yaml.v3 v3.0.1
