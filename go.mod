@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
-	github.com/hashicorp/yamux v0.1.1
+	github.com/hashicorp/yamux v0.1.2
 	github.com/rivo/tview v0.0.0-20230511053024-822bd067b165
 	gopkg.in/yaml.v3 v3.0.1
 )
