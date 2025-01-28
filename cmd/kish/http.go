@@ -82,7 +82,7 @@ func replaceSHIfHasPrefix(header *http.Header, name string, prefix string, schem
 	if strings.HasPrefix(valStr, prefix) {
 		valURL, err := url.Parse(valStr)
 		if err != nil {
-			log.Printf("could not parse %s header `%s`: %v", name, valStr, err)
+			log.Printf("could not parse %s header as a url: %v", name, err)
 		} else {
 			valURL.Scheme = scheme
 			valURL.Host = host
