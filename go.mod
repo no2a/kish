@@ -1,6 +1,8 @@
 module github.com/no2a/kish
 
-go 1.20
+go 1.24
+
+toolchain go1.24.3
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
