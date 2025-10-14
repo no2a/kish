@@ -176,7 +176,10 @@ func GetRemoteIP(req *http.Request, trustXFF bool) string {
 	if trustXFF {
 		xff := req.Header.Get("X-Forwarded-For")
 		if xff != "" {
-			return xff
+			xff_parts := strings.Split(xff, ",")
+			if len(xff_parts) > 0 {
+				return strings.TrimSpace(xff_parts[len(xff_parts)-1])
+			}
 		}
 	}
 	host, _, err := net.SplitHostPort(req.RemoteAddr)
