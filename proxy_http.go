@@ -130,7 +130,7 @@ func (rs *KishServer) runHttp(w http.ResponseWriter, r *http.Request) {
 		proxy2.ipset.Add(cidr)
 	}
 	if params.AllowMyIP {
-		if strings.Index(remoteIP, ":") != -1 {
+		if strings.Contains(remoteIP, ":") {
 			// 多分IPv6
 			proxy2.ipset.Add(remoteIP + "/128")
 		} else {
@@ -252,9 +252,8 @@ func (p *proxy2Struct) normalHandler(w http.ResponseWriter, req *http.Request) {
 	log.Printf("resp Connection:%s", resp.Header.Get("Connection"))
 
 	if IsWebsocket(req) && resp.StatusCode == 101 {
-		hijackToWebsocket(w, req, serverConn)
+		hijackToWebsocket(w, serverConn)
 	}
-	return
 }
 
 func writeResponse(r *http.Response, w http.ResponseWriter) (int64, error) {
@@ -272,7 +271,7 @@ func IsWebsocket(req *http.Request) bool {
 	return r
 }
 
-func hijackToWebsocket(w http.ResponseWriter, req *http.Request, serverConn io.ReadWriteCloser) {
+func hijackToWebsocket(w http.ResponseWriter, serverConn io.ReadWriteCloser) {
 	defer serverConn.Close()
 	hj, ok := w.(http.Hijacker)
 	if !ok {

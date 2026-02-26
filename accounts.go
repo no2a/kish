@@ -73,16 +73,3 @@ func (ts *TokenSet) Get(keyID string) []byte {
 	}
 	return []byte(key)
 }
-
-func (ts *TokenSet) validate(token string) bool {
-	ts.ensureLoaded()
-	if ts.Tokens == nil {
-		return false
-	}
-	for _, key := range *ts.Tokens {
-		if key == token {
-			return true
-		}
-	}
-	return false
-}
