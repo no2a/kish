@@ -22,7 +22,7 @@ func parseKey(key string) (string, string) {
 	return parts[0], parts[1]
 }
 
-func canonicalizeTargetArg(target string) string {
+func canonicalizeTargetArg(target string, defaultPort int) string {
 	host, port, err := net.SplitHostPort(target)
 	if err != nil {
 		host = ""
@@ -40,10 +40,14 @@ func canonicalizeTargetArg(target string) string {
 	if host == "" {
 		host = "127.0.0.1"
 	}
-	return net.JoinHostPort(host, port)
+	if num == defaultPort {
+		return host
+	} else {
+		return net.JoinHostPort(host, port)
+	}
 }
 
-func dialKish(pathAppend string) (*websocket.Conn, string, http.Header) {
+func dialKish(pathAppend string) (*websocket.Conn, *url.URL, http.Header) {
 	wsURL, err := url.Parse(config.KishURL)
 	if err != nil {
 		log.Fatalf("kish-url `%s` is invalid: %s", config.KishURL, err)
@@ -87,7 +91,7 @@ func base64str(pp *kish.ProxyParameters) (string, error) {
 	return string(b), nil
 }
 
-func makeWsConn(wsUrl string, origin string, token string, param string) (*websocket.Conn, string, http.Header, error) {
+func makeWsConn(wsUrl string, origin string, token string, param string) (*websocket.Conn, *url.URL, http.Header, error) {
 	header := http.Header{}
 	header.Set("X-Kish-HTTP", param)
 	header.Set("Authorization", "Bearer "+token)
@@ -103,9 +107,14 @@ func makeWsConn(wsUrl string, origin string, token string, param string) (*webso
 			}
 			err = fmt.Errorf("%w: %s", err, msg)
 		}
-		return nil, "", nil, err
+		return nil, nil, nil, err
 	}
-	proxyURL := resp.Header.Get("X-Kish-URL")
+	proxyURLStr := resp.Header.Get("X-Kish-URL")
+	proxyURL, err := url.Parse(proxyURLStr)
+	if err != nil {
+		log.Printf("could not parse %s header as a url: %v", "X-Kish-URL", err)
+		return nil, nil, nil, err
+	}
 	return conn, proxyURL, resp.Header, nil
 }
 

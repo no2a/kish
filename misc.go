@@ -3,6 +3,7 @@ package kish
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -13,7 +14,9 @@ import (
 )
 
 var (
-	websocketUpgrader = websocket.Upgrader{}
+	websocketUpgrader     = websocket.Upgrader{}
+	LogHttpRequestDetail  = false
+	LogHttpResponseDetail = false
 )
 
 type HasKeyID interface {
@@ -46,7 +49,15 @@ func Passthrough(a, b io.ReadWriter) error {
 	return <-errCh
 }
 
-func LogRequest(prefix string, r *http.Request, full bool) {
+func LogRequest(prefix string, r *http.Request, header bool, full bool) {
+	log.Printf("%s%s %s", prefix, r.Method, r.URL.String())
+	if header {
+		if headers, err := json.MarshalIndent(r.Header, prefix, "  "); err == nil {
+			log.Printf("%sheaders: %s", prefix, headers)
+		} else {
+			log.Printf("%sfailed to marshal headers: %s", prefix, err)
+		}
+	}
 	if full {
 		body, _ := io.ReadAll(r.Body)
 		r.Body = io.NopCloser(bytes.NewReader(body))
@@ -54,25 +65,30 @@ func LogRequest(prefix string, r *http.Request, full bool) {
 		r.Write(logbuf)
 		log.Printf("%s%s", prefix, logbuf.String())
 		r.Body = io.NopCloser(bytes.NewReader(body))
-	} else {
-		log.Printf("%s%s %s", prefix, r.Method, r.URL.String())
 	}
 }
 
-func LogResponse(prefix string, r *http.Response, full bool) {
+func LogResponse(prefix string, r *http.Response, header bool, full bool) {
+	log.Printf("%s%s <- %s", prefix, r.Status, r.Request.URL.String())
+	if header {
+		if headers, err := json.MarshalIndent(r.Header, prefix, "  "); err == nil {
+			log.Printf("%sheaders: %s", prefix, headers)
+		} else {
+			log.Printf("%sfailed to marshal headers: %s", prefix, err)
+		}
+	}
 	if full {
 		body, _ := io.ReadAll(r.Body)
 		r.Body = io.NopCloser(bytes.NewReader(body))
 		logbuf := new(bytes.Buffer)
 		r.Write(logbuf)
+		// 先頭4096バイトだけログに出す
 		s := logbuf.String()
 		if len(s) > 4096 {
 			s = s[:4096]
 		}
 		log.Printf("%s%s", prefix, s)
 		r.Body = io.NopCloser(bytes.NewReader(body))
-	} else {
-		log.Printf("%s%s <- %s", prefix, r.Status, r.Request.URL.String())
 	}
 }
 
@@ -106,7 +122,6 @@ func ForwardHTTP(rr *HTTPRequestReader, server io.ReadWriteCloser, reqMW HTTPReq
 		if err != nil {
 			return fmt.Errorf("ReadRequest: %w", err)
 		}
-		LogRequest("req ", req, false)
 		if reqMW != nil {
 			errResp := reqMW(req)
 			if errResp != nil {
@@ -114,15 +129,16 @@ func ForwardHTTP(rr *HTTPRequestReader, server io.ReadWriteCloser, reqMW HTTPReq
 				continue
 			}
 		}
+		LogRequest("req ", req, LogHttpRequestDetail, false)
 		req.Write(server)
 		res, err := http.ReadResponse(serverBufR, req)
 		if err != nil {
 			return fmt.Errorf("ReadResponse: %w", err)
 		}
-		LogResponse("res ", res, false)
 		if respMW != nil {
 			respMW(res)
 		}
+		LogResponse("res ", res, LogHttpResponseDetail, false)
 		res.Write(rr.Conn)
 		if res.Close {
 			return nil

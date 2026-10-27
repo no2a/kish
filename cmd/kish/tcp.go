@@ -11,7 +11,7 @@ import (
 )
 
 func tcpMain() {
-	target := canonicalizeTargetArg(*flag_tcpTarget)
+	target := canonicalizeTargetArg(*flag_tcpTarget, -1)
 	wsConn, proxyURL, header := dialKish("proxy1")
 	tuiWriteText(fmt.Sprintf("%s -> %s\n", proxyURL, target))
 	tuiWriteText(fmt.Sprintf("Allow IP: %s\n", header.Get("X-Kish-Allow-IP")))
