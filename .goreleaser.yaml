@@ -49,15 +49,22 @@ snapshot:
 changelog:
   disable: true
 
-brews:
+homebrew_casks:
   - name: kish
     repository:
       owner: no2a
       name: homebrew-tap
-    directory: Formula
-    url_template: "https://github.com/no2a/kish/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    directory: Casks
+    url:
+      template: "https://github.com/no2a/kish/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     commit_author:
       name: no2a
       email: arata776@gmail.com
     description: "kish client"
     ids: [kish]
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/kish"]
+          end
