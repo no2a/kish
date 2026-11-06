@@ -49,13 +49,25 @@ func Passthrough(a, b io.ReadWriter) error {
 	return <-errCh
 }
 
+func obfuscatedHeader(header http.Header) http.Header {
+	header2 := make(http.Header)
+	for k, v := range header {
+		if k == "Authorization" {
+			v = []string{"**obfuscated**"}
+		}
+		header2[k] = v
+	}
+	return header2
+}
+
 func LogRequest(prefix string, r *http.Request, header bool, full bool) {
 	log.Printf("%s%s %s", prefix, r.Method, r.URL.String())
 	if header {
-		if headers, err := json.MarshalIndent(r.Header, prefix, "  "); err == nil {
-			log.Printf("%sheaders: %s", prefix, headers)
+		obfHeader := obfuscatedHeader(r.Header)
+		if header, err := json.MarshalIndent(obfHeader, prefix, "  "); err == nil {
+			log.Printf("%sheader: %s", prefix, header)
 		} else {
-			log.Printf("%sfailed to marshal headers: %s", prefix, err)
+			log.Printf("%sfailed to marshal header: %s", prefix, err)
 		}
 	}
 	if full {
@@ -71,10 +83,11 @@ func LogRequest(prefix string, r *http.Request, header bool, full bool) {
 func LogResponse(prefix string, r *http.Response, header bool, full bool) {
 	log.Printf("%s%s <- %s", prefix, r.Status, r.Request.URL.String())
 	if header {
-		if headers, err := json.MarshalIndent(r.Header, prefix, "  "); err == nil {
-			log.Printf("%sheaders: %s", prefix, headers)
+		obfHeader := obfuscatedHeader(r.Header)
+		if header, err := json.MarshalIndent(obfHeader, prefix, "  "); err == nil {
+			log.Printf("%sheader: %s", prefix, header)
 		} else {
-			log.Printf("%sfailed to marshal headers: %s", prefix, err)
+			log.Printf("%sfailed to marshal header: %s", prefix, err)
 		}
 	}
 	if full {
